@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/ncfex/dcart/api-gateway/internal/infrastructure/config"
-	"github.com/ncfex/dcart/api-gateway/pkg/httputil/request"
+	"github.com/ncfex/dcart-gateway/internal/infrastructure/config"
+	"github.com/ncfex/dcart-gateway/pkg/httputil/request"
 )
 
 type AuthMiddleware struct {

@@ -6,8 +6,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ncfex/dcart/api-gateway/internal/infrastructure/config"
-	"github.com/ncfex/dcart/api-gateway/internal/middleware"
+	"github.com/ncfex/dcart-gateway/internal/infrastructure/config"
+	"github.com/ncfex/dcart-gateway/internal/middleware"
 )
 
 type Router struct {

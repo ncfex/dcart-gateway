@@ -4,8 +4,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/ncfex/dcart/api-gateway/internal/infrastructure/config"
-	"github.com/ncfex/dcart/api-gateway/internal/proxy"
+	"github.com/ncfex/dcart-gateway/internal/infrastructure/config"
+	"github.com/ncfex/dcart-gateway/internal/proxy"
 )
 
 type Server struct {

@@ -5,8 +5,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/ncfex/dcart/api-gateway/internal/infrastructure/config"
-	"github.com/ncfex/dcart/api-gateway/internal/server"
+	"github.com/ncfex/dcart-gateway/internal/infrastructure/config"
+	"github.com/ncfex/dcart-gateway/internal/server"
 )
 
 func main() {

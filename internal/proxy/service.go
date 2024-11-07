@@ -6,7 +6,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 
-	"github.com/ncfex/dcart/api-gateway/internal/infrastructure/config"
+	"github.com/ncfex/dcart-gateway/internal/infrastructure/config"
 )
 
 type serviceProxy struct {
