@@ -7,6 +7,7 @@ import (
 	"net/url"
 
 	"github.com/ncfex/dcart-gateway/internal/infrastructure/config"
+	"github.com/ncfex/dcart-gateway/pkg/api"
 )
 
 type serviceProxy struct {
@@ -18,7 +19,7 @@ type serviceProxy struct {
 func newServiceProxy(cfg *config.ServiceConfig, router *Router) (*serviceProxy, error) {
 	target, err := url.Parse(cfg.BaseURL)
 	if err != nil {
-		return nil, err
+		return nil, api.ErrParsingFailed
 	}
 
 	proxy := httputil.NewSingleHostReverseProxy(target)

@@ -1,39 +1,43 @@
 package proxy
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 	"sync"
 
 	"github.com/ncfex/dcart-gateway/internal/infrastructure/config"
 	"github.com/ncfex/dcart-gateway/internal/middleware"
+	"github.com/ncfex/dcart-gateway/pkg/api"
+	"github.com/ncfex/dcart-gateway/pkg/httputil/response"
 )
 
 type Router struct {
-	cfg      *config.Config
-	services map[string]*serviceProxy
-	auth     *middleware.AuthMiddleware
-	mu       sync.RWMutex
+	cfg       *config.Config
+	services  map[string]*serviceProxy
+	auth      *middleware.AuthMiddleware
+	responder response.Responder
+	mu        sync.RWMutex
 }
 
-func NewRouter(cfg *config.Config) (*Router, error) {
+func NewRouter(cfg *config.Config, responder response.Responder) (*Router, error) {
 	r := &Router{
-		cfg:      cfg,
-		services: make(map[string]*serviceProxy),
-		auth:     middleware.NewAuthMiddleware(cfg.Auth),
+		cfg:       cfg,
+		services:  make(map[string]*serviceProxy),
+		auth:      middleware.NewAuthMiddleware(cfg.Auth, responder),
+		responder: responder,
 	}
 
 	if err := r.initializeServices(); err != nil {
-		return nil, fmt.Errorf("failed to initialize services: %w", err)
+		return nil, err
 	}
+
 	return r, nil
 }
 
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	parts := strings.SplitN(strings.TrimPrefix(req.URL.Path, "/"), "/", 2)
 	if len(parts) == 0 {
-		http.Error(w, "Invalid path", http.StatusBadRequest)
+		r.responder.RespondWithError(w, http.StatusBadRequest, api.ErrInvalidPath.Error(), api.ErrInvalidPath)
 		return
 	}
 
@@ -44,7 +48,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	r.mu.RUnlock()
 
 	if !exists {
-		http.Error(w, "Service not found", http.StatusNotFound)
+		r.responder.RespondWithError(w, http.StatusNotFound, api.ErrServiceNotFound.Error(), api.ErrServiceNotFound)
 		return
 	}
 
@@ -61,7 +65,7 @@ func (r *Router) initializeServices() error {
 	for _, svc := range r.cfg.Services {
 		proxy, err := newServiceProxy(&svc, r)
 		if err != nil {
-			return fmt.Errorf("failed to initialize service %s: %w", svc.Name, err)
+			return err
 		}
 
 		r.mu.Lock()
