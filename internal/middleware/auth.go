@@ -2,19 +2,24 @@ package middleware
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"github.com/ncfex/dcart-gateway/internal/infrastructure/config"
+	"github.com/ncfex/dcart-gateway/pkg/api"
 	"github.com/ncfex/dcart-gateway/pkg/httputil/request"
+	"github.com/ncfex/dcart-gateway/pkg/httputil/response"
 )
 
 type AuthMiddleware struct {
-	cfg config.AuthConfig
+	cfg       config.AuthConfig
+	responder response.Responder
 }
 
-func NewAuthMiddleware(cfg config.AuthConfig) *AuthMiddleware {
+func NewAuthMiddleware(cfg config.AuthConfig, responder response.Responder) *AuthMiddleware {
 	return &AuthMiddleware{
-		cfg: cfg,
+		cfg:       cfg,
+		responder: responder,
 	}
 }
 
@@ -25,11 +30,15 @@ func (am *AuthMiddleware) Middleware(next http.Handler) http.Handler {
 
 		valid, err := am.validateToken(ctx, r.Header)
 		if err != nil {
-			http.Error(w, "Authorization service unavailable", http.StatusServiceUnavailable)
+			if errors.Is(err, context.DeadlineExceeded) {
+				am.responder.RespondWithError(w, http.StatusServiceUnavailable, api.ErrTimeout.Error(), api.ErrTimeout)
+			} else {
+				am.responder.RespondWithError(w, http.StatusUnauthorized, api.ErrUnauthorized.Error(), api.ErrUnauthorized)
+			}
 			return
 		}
 		if !valid {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			am.responder.RespondWithError(w, http.StatusUnauthorized, api.ErrUnauthorized.Error(), api.ErrUnauthorized)
 			return
 		}
 
@@ -40,14 +49,14 @@ func (am *AuthMiddleware) Middleware(next http.Handler) http.Handler {
 func (am *AuthMiddleware) validateToken(ctx context.Context, header http.Header) (bool, error) {
 	token, err := request.GetBearerToken(header)
 	if err != nil {
-		return false, nil
+		return false, api.ErrUnauthorized
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, am.cfg.ServiceURL, nil)
 	if err != nil {
-		return false, err
+		return false, api.ErrRequestFailed
 	}
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set(request.AuthorizationHeader, request.BearerPrefix+token)
 
 	client := &http.Client{
 		Timeout: am.cfg.Timeout,
@@ -56,14 +65,14 @@ func (am *AuthMiddleware) validateToken(ctx context.Context, header http.Header)
 	resp, err := client.Do(req)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
-			return false, ctx.Err()
+			return false, api.ErrTimeout
 		}
-		return false, err
+		return false, api.ErrRequestFailed
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return false, nil
+		return false, api.ErrUnauthorized
 	}
 
 	return true, nil
