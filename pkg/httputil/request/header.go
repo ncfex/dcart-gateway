@@ -1,31 +1,30 @@
 package request
 
 import (
-	"errors"
 	"net/http"
 	"strings"
+
+	"github.com/ncfex/dcart-gateway/pkg/api"
 )
 
-const BearerPrefix string = "Bearer "
-
-var (
-	ErrNoAuthHeaderIncluded = errors.New("no auth header included in request")
-	ErrMalformedAuthHeader  = errors.New("malformed authorization header")
+const (
+	BearerPrefix        string = "Bearer "
+	AuthorizationHeader string = "Authorization"
 )
 
 func GetBearerToken(headers http.Header) (string, error) {
-	authHeader := headers.Get("Authorization")
+	authHeader := headers.Get(AuthorizationHeader)
 	if authHeader == "" {
-		return "", ErrNoAuthHeaderIncluded
+		return "", api.ErrNoAuthHeaderIncluded
 	}
 
 	if !strings.HasPrefix(authHeader, BearerPrefix) {
-		return "", ErrMalformedAuthHeader
+		return "", api.ErrMalformedAuthHeader
 	}
 
 	token := authHeader[len(BearerPrefix):]
 	if token == "" {
-		return "", ErrMalformedAuthHeader
+		return "", api.ErrMalformedAuthHeader
 	}
 
 	return token, nil

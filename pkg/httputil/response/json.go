@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+
+	"github.com/ncfex/dcart-gateway/pkg/api"
 )
 
 type ErrorResponse struct {
@@ -41,11 +43,9 @@ func (r *httpResponder) RespondWithJSON(w http.ResponseWriter, code int, payload
 	w.Header().Set("Content-Type", "application/json")
 	data, err := json.Marshal(payload)
 	if err != nil {
-		r.logger.Printf("error marshaling json: %s", err)
-		w.WriteHeader(http.StatusInternalServerError)
+		r.RespondWithError(w, http.StatusInternalServerError, api.ErrUnknown.Error(), err)
 		return
 	}
-
 	w.WriteHeader(code)
 	w.Write(data)
 }
